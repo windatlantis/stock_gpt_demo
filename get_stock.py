@@ -25,19 +25,19 @@ def get_stock_info_code_name():
     stock_sh = stock_sh[["证券代码", "证券简称", "上市日期"]]
     stock_sh['market_code'] = 'sh' + stock_sh["证券代码"]
 
-    # stock_sz = ak.stock_info_sz_name_code(indicator="A股列表")
-    # stock_sz["A股代码"] = stock_sz["A股代码"].astype(str).str.zfill(6)
-    # stock_sz['market_code'] = 'sz' + stock_sz["A股代码"]
-    # stock_sz["A股上市日期"] = pd.to_datetime(stock_sz["A股上市日期"]).dt.date
-    # big_df = pd.concat([big_df, stock_sz[["A股代码", "A股简称", 'A股上市日期', 'market_code']]], ignore_index=True)
-    # big_df.columns = ["证券代码", "证券简称", '上市日期', 'market_code']
+    stock_sz = ak.stock_info_sz_name_code(indicator="A股列表")
+    stock_sz["A股代码"] = stock_sz["A股代码"].astype(str).str.zfill(6)
+    stock_sz['market_code'] = 'sz' + stock_sz["A股代码"]
+    stock_sz["A股上市日期"] = pd.to_datetime(stock_sz["A股上市日期"]).dt.date
+    big_df = pd.concat([big_df, stock_sz[["A股代码", "A股简称", 'A股上市日期', 'market_code']]], ignore_index=True)
+    big_df.columns = ["证券代码", "证券简称", '上市日期', 'market_code']
 
-    # stock_kcb = ak.stock_info_sh_name_code(symbol="科创板")
-    # stock_kcb = stock_kcb[["证券代码", "证券简称", '上市日期']]
-    # stock_kcb['market_code'] = 'sh' + stock_kcb["证券代码"]
+    stock_kcb = ak.stock_info_sh_name_code(symbol="科创板")
+    stock_kcb = stock_kcb[["证券代码", "证券简称", '上市日期']]
+    stock_kcb['market_code'] = 'sh' + stock_kcb["证券代码"]
 
     big_df = pd.concat([big_df, stock_sh], ignore_index=True)
-    # big_df = pd.concat([big_df, stock_kcb], ignore_index=True)
+    big_df = pd.concat([big_df, stock_kcb], ignore_index=True)
     big_df.columns = ["code", "name", 'list_date', 'market_code']
 
     return big_df
