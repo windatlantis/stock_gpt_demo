@@ -32,6 +32,7 @@ def filter_stocks(stock_list, start_date, end_date):
         stock_name = row['name']
         list_date = row['list_date']
 
+        print('loop stock ---- ' + stock_code + ',' + stock_name)
         if not (stock_code.startswith("688") or stock_name.startswith("ST") or stock_name.startswith("*ST")):
             prices = get_stock_prices(stock_code, start_date=one_year_ago_str, end_date=end_date)
 
@@ -82,6 +83,7 @@ def calculate_performance(start_date, end_date):
                 sell_price = stock_prices.iloc[-1]['close']
 
             profit += num_shares * (sell_price - buy_price)
+            print('sell stock ---- ' + trade_date + ',' + stock_code + ',' + stock_name + ' ---- 收益: ' + str(profit))
 
         total_investment += investment
         total_profit += profit
