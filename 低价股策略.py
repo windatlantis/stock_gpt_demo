@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 import get_stock
 
 # 获取A股股票列表
-def get_stock_list():
+def get_stock_list() -> pd.DataFrame:
     stock_list = get_stock.get_stock_info_code_name()
     return stock_list
 
 # 获取股票价格数据
-def get_stock_prices(stock_code, start_date, end_date):
+def get_stock_prices(stock_code, start_date, end_date) -> pd.DataFrame:
     try:
         stock_data = get_stock.get_stock_history(stock_code, start_date=start_date, end_date=end_date)
         
@@ -21,44 +21,55 @@ def get_stock_prices(stock_code, start_date, end_date):
         return None
 
 # 筛选符合条件的股票
-def filter_stocks(stock_list, start_date, end_date):
+def filter_stocks(stock_list: pd.DataFrame, start_date, end_date):
     filtered_stocks = []
     one_year_ago = datetime.datetime.strptime(start_date, "%Y%m%d") - datetime.timedelta(days=365)
     one_year_ago = one_year_ago.date()
-    one_year_ago_str = (one_year_ago).strftime("%Y%m%d")
+    # one_year_ago_str = (one_year_ago).strftime("%Y%m%d")
 
     for _, row in stock_list.iterrows():
         stock_code = row['code']
         stock_name = row['name']
         list_date = row['list_date']
 
-        print('loop stock ---- ' + stock_code + ',' + stock_name)
-        if not (stock_code.startswith("688") or stock_name.startswith("ST") or stock_name.startswith("*ST")):
-            prices = get_stock_prices(stock_code, start_date=one_year_ago_str, end_date=end_date)
+        if list_date > one_year_ago :
+            # 上市不满一年
+            continue
+        if stock_code.startswith("688") or stock_name.startswith("ST") or stock_name.startswith("*ST"):
+            # 科创、退市
+            continue
 
-            if prices is not None and len(prices) > 0:
-                prices['code'] = stock_code
-                prices['name'] = stock_name
-                prices['list_date'] = list_date
+        prices = get_stock_prices(stock_code, start_date=start_date, end_date=end_date)
+        if prices is not None and len(prices) > 0:
+            print('loop stock ---- ' + stock_code + ',' + stock_name)
+            prices['code'] = stock_code
+            prices['name'] = stock_name
+            prices['date_month'] = prices['date'].str[:7]
 
-                if (prices['close'].iloc[-1] > 2) and (prices['list_date'].iloc[-1] < one_year_ago):
+            line_number = int(prices.shape[0])
+            for i in range(line_number):
+                if (prices['close'].iloc[i] > 2):
+                    # 价格大于2元
                     filtered_stocks.append(prices)
 
     return pd.concat(filtered_stocks)
 
 # 每月1日选股
-def select_stocks(stocks, date):
+def select_stocks(stocks, date) -> pd.DataFrame:
     stocks = stocks[stocks['date'] == date]
     stocks = stocks.sort_values(by='close').iloc[:100]
     return stocks
 
 # 计算收益
 def calculate_performance(start_date, end_date):
+    # ["code", "name", 'list_date', 'market_code']
     stock_list = get_stock_list()
+    # ["date", "close", 'code', "name", 'date_month]
     filtered_stocks = filter_stocks(stock_list, start_date, end_date)
     trade_dates = pd.date_range(start_date, end_date, freq='MS').strftime("%Y-%m-%d").tolist()
     total_investment = 0
     total_profit = 0
+    trade_record = pd.DataFrame(columns=['股票代码', '股票名称', '买入日期',  '买入价格', '卖出日期',  '卖出价格', '收益'])
 
     for trade_date in trade_dates:
         selected_stocks = select_stocks(filtered_stocks, trade_date)
@@ -69,21 +80,19 @@ def calculate_performance(start_date, end_date):
             stock_code = row['code']
             stock_name = row['name']
             buy_price = row['close']
+            date_month = row['date_month']
             num_shares = 10000 / buy_price
             investment += 10000
 
             # 计算月底卖出价格
-            sell_date = (datetime.datetime.strptime(trade_date, "%Y-%m-%d") + datetime.timedelta(days=30)).strftime("%Y-%m-%d")
-            stock_prices = filtered_stocks[filtered_stocks['code'] == stock_code]
-            sell_price_row = stock_prices[stock_prices['date'] == sell_date]
-
-            if not sell_price_row.empty:
-                sell_price = sell_price_row.iloc[0]['close']
-            else:
-                sell_price = stock_prices.iloc[-1]['close']
+            stock_prices = filtered_stocks.loc[(filtered_stocks['code'] == stock_code) & (filtered_stocks['date_month'] == date_month)]
+            month_lastday = stock_prices.sort_values(by='date').iloc[-1]
+            sell_price = month_lastday['close']
 
             profit += num_shares * (sell_price - buy_price)
             print('sell stock ---- ' + trade_date + ',' + stock_code + ',' + stock_name + ' ---- 收益: ' + str(profit))
+            record = {'股票代码': stock_code, '股票名称': stock_name, '买入日期':trade_date, '买入价格':buy_price, '卖出日期':month_lastday['date'], '卖出价格':sell_price, '收益':profit}
+            trade_record = trade_record.append(record, ignore_index=True)
 
         total_investment += investment
         total_profit += profit
@@ -95,22 +104,23 @@ def calculate_performance(start_date, end_date):
 
     print(f"Total Investment: {total_investment}, Total Profit: {total_profit}")
     print(f"Return on Investment (ROI): {roi * 100:.2f}%, Annualized ROI: {annualized_roi * 100:.2f}%")
+    trade_record.to_csv('./trade_record.csv')
 
     # 绘制收益曲线与沪深300指数的对比图
-    hs300 = get_stock.get_index_history("000300", start_date, end_date)
-    hs300.set_index('date', inplace=True)
-    hs300['close'] = hs300['close'].astype(float)
-    hs300['ROI'] = (hs300['close'].pct_change() + 1).cumprod()
+    # hs300 = get_stock.get_index_history("000300", start_date, end_date)
+    # hs300.set_index('date', inplace=True)
+    # hs300['close'] = hs300['close'].astype(float)
+    # hs300['ROI'] = (hs300['close'].pct_change() + 1).cumprod()
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(hs300['ROI'], label="HS300")
-    plt.plot((filtered_stocks['close'].pct_change() + 1).cumprod(), label="Strategy")
-    plt.legend(loc="best")
-    plt.title("Return Comparison")
-    plt.xlabel("Time")
-    plt.ylabel("Cumulative Return")
-    plt.grid()
-    plt.show()
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(hs300['ROI'], label="HS300")
+    # plt.plot((filtered_stocks['close'].pct_change() + 1).cumprod(), label="Strategy")
+    # plt.legend(loc="best")
+    # plt.title("Return Comparison")
+    # plt.xlabel("Time")
+    # plt.ylabel("Cumulative Return")
+    # plt.grid()
+    # plt.show()
 
 start_date="20210101"
 end_date="20210630"
