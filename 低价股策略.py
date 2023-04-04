@@ -88,34 +88,37 @@ def calculate_performance(start_date, end_date):
     trade_months = pd.date_range(start_date, end_date, freq='MS').strftime("%Y-%m").tolist()
     total_investment = 0
     total_profit = 0
-    trade_record = pd.DataFrame(columns=['股票代码', '股票名称', '买入日期',  '买入价格', '卖出日期',  '卖出价格', '收益'])
+    trade_record = pd.DataFrame(columns=['股票代码', '股票名称', '买入日期',  '买入价格', '卖出日期',  '卖出价格', '本次收益', '累计收益'])
 
     for trade_month in trade_months:
         selected_stocks = select_stocks(filtered_stocks, trade_month, 1)
-        investment = 0
-        profit = 0
+        month_investment = 0
+        month_profit = 0
 
         for _, row in selected_stocks.iterrows():
             stock_code = row['code']
             stock_name = row['name']
             buy_price = row['close']
-            trade_date = row['date']
+            buy_date = row['date']
             num_shares = 10000 / buy_price
-            investment += 10000
+            month_investment += 10000
 
             # 计算月底卖出价格
             stock_prices = filtered_stocks.loc[(filtered_stocks['code'] == stock_code) & (filtered_stocks['date_month'] == trade_month)]
             month_lastday = stock_prices.sort_values(by='date').iloc[-1]
+            sell_date = month_lastday['date']
             sell_price = month_lastday['close']
 
-            profit += num_shares * (sell_price - buy_price)
-            print('sell stock ---- ' + trade_month + ',' + stock_code + ',' + stock_name + ' ---- 收益: ' + str(profit))
-            record = {'股票代码': stock_code, '股票名称': stock_name, '买入日期':trade_date, '买入价格':buy_price, '卖出日期':month_lastday['date'], '卖出价格':sell_price, '收益':profit}
+            cur_profit = num_shares * (sell_price - buy_price)
+            month_profit += cur_profit
+            total_profit += cur_profit
+            print('sell stock ---- ' + sell_date + ',' + stock_code + ',' + stock_name + ' ---- 收益: ' + str(cur_profit))
+            record = {'股票代码': stock_code, '股票名称': stock_name, '买入日期':buy_date, '买入价格':buy_price, '卖出日期':sell_date, '卖出价格':sell_price, '本次收益':cur_profit, '累计收益':total_profit}
             trade_record = trade_record.append(record, ignore_index=True)
 
-        total_investment += investment
-        total_profit += profit
-        print(f"Trade Date: {trade_month}, Investment: {investment}, Profit: {profit}")
+        total_investment += month_investment
+
+        print(f"Trade Month: {trade_month}, Investment: {month_investment}, Profit: {month_profit}")
 
     # 计算收益率和年化收益率
     roi = total_profit / total_investment
@@ -124,7 +127,7 @@ def calculate_performance(start_date, end_date):
     print(f"Total Investment: {total_investment}, Total Profit: {total_profit}")
     print(f"Return on Investment (ROI): {roi * 100:.2f}%, Annualized ROI: {annualized_roi * 100:.2f}%")
     trade_record.to_csv('./trade_record_{}.csv'.format(datetime.datetime.now().strftime('%Y%m%d%H%M%S')))
-    print('csv is save')
+    print('----- csv 已保存 -----')
 
     # 绘制收益曲线与沪深300指数的对比图
     # hs300 = get_stock.get_index_history("000300", start_date, end_date)

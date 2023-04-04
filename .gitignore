@@ -128,5 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# csv
+# 其他文件
 *.csv
+.DS_Store
