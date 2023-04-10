@@ -57,16 +57,18 @@ def filter_stocks(stock_list: pd.DataFrame, start_date, end_date):
     return pd.concat(filtered_stocks)
 
 # 每月1日选股
-def select_stocks(stocks: pd.DataFrame, month, type=1) -> pd.DataFrame:
+def select_stocks(stocks: pd.DataFrame, month, type=1, skip4month=False) -> pd.DataFrame:
     # 1版：1号买，月底卖
     # 2版：随机一天买，月底卖
     # 3版：随机一天买，持股1/2/3/4周卖掉
     # 4版：买分属不同行业的10只股
     monthArr = ['01', '04', '09', '10']
     if (type == 1):
-        stocks_this_month = stocks[stocks['date_month'] == month]
-        # 排除1 4 9 10 最垃圾的4个月
-        # stocks_this_month = stocks[(stocks['date_month'] == month) & (stocks['month'] not in monthArr)]
+        if skip4month:
+            # 排除1 4 9 10 最垃圾的4个月
+            stocks_this_month = stocks[(stocks['date_month'] == month) & (stocks['month'] not in monthArr)]
+        else:
+            stocks_this_month = stocks[stocks['date_month'] == month]
         stocks_month_firstday = stocks_this_month.groupby('code',as_index=False).apply(get_first_day)
         stocks_month_firstday = stocks_month_firstday[stocks_month_firstday['close'] > 2]
         stocks_100 = stocks_month_firstday.sort_values(by='close').iloc[:100]
@@ -96,6 +98,7 @@ def calculate_performance(start_date, end_date):
 
     for trade_month in trade_months:
         selected_stocks = select_stocks(filtered_stocks, trade_month, 1)
+        # selected_stocks = select_stocks(filtered_stocks, trade_month, 1, True)
         month_investment = 0
         month_profit = 0
 
