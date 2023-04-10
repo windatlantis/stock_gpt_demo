@@ -45,6 +45,7 @@ def filter_stocks(stock_list: pd.DataFrame, start_date, end_date):
             prices['code'] = stock_code
             prices['name'] = stock_name
             prices['date_month'] = prices['date'].str[:7]
+            prices['month'] = prices['date'].str[5:7]
             filtered_stocks.append(prices)
 
             # line_number = int(prices.shape[0])
@@ -61,8 +62,11 @@ def select_stocks(stocks: pd.DataFrame, month, type=1) -> pd.DataFrame:
     # 2版：随机一天买，月底卖
     # 3版：随机一天买，持股1/2/3/4周卖掉
     # 4版：买分属不同行业的10只股
+    monthArr = ['01', '04', '09', '10']
     if (type == 1):
         stocks_this_month = stocks[stocks['date_month'] == month]
+        # 排除1 4 9 10 最垃圾的4个月
+        # stocks_this_month = stocks[(stocks['date_month'] == month) & (stocks['month'] not in monthArr)]
         stocks_month_firstday = stocks_this_month.groupby('code',as_index=False).apply(get_first_day)
         stocks_month_firstday = stocks_month_firstday[stocks_month_firstday['close'] > 2]
         stocks_100 = stocks_month_firstday.sort_values(by='close').iloc[:100]
@@ -83,7 +87,7 @@ def get_first_day(x):
 def calculate_performance(start_date, end_date):
     # ["code", "name", 'list_date', 'market_code']
     stock_list = get_stock_list()
-    # ["date", "close", 'code', "name", 'date_month]
+    # ["date", "close", 'code', "name", 'date_month, 'month']
     filtered_stocks = filter_stocks(stock_list, start_date, end_date)
     trade_months = pd.date_range(start_date, end_date, freq='MS').strftime("%Y-%m").tolist()
     total_investment = 0
