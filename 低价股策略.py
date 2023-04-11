@@ -66,7 +66,7 @@ def select_stocks(stocks: pd.DataFrame, month, type=1, skip4month=False) -> pd.D
     if (type == 1):
         if skip4month:
             # 排除1 4 9 10 最垃圾的4个月
-            stocks_this_month = stocks[(stocks['date_month'] == month) & (stocks['month'] not in monthArr)]
+            stocks_this_month = stocks[(stocks['date_month'] == month) & (~stocks['month'].isin(monthArr))]
         else:
             stocks_this_month = stocks[stocks['date_month'] == month]
         stocks_month_firstday = stocks_this_month.groupby('code',as_index=False).apply(get_first_day)
@@ -97,8 +97,8 @@ def calculate_performance(start_date, end_date):
     trade_record = pd.DataFrame(columns=['股票代码', '股票名称', '买入日期',  '买入价格', '卖出日期',  '卖出价格', '本次收益', '累计收益'])
 
     for trade_month in trade_months:
-        selected_stocks = select_stocks(filtered_stocks, trade_month, 1)
-        # selected_stocks = select_stocks(filtered_stocks, trade_month, 1, True)
+        # selected_stocks = select_stocks(filtered_stocks, trade_month, 1)
+        selected_stocks = select_stocks(filtered_stocks, trade_month, 1, True)
         month_investment = 0
         month_profit = 0
 

@@ -9,8 +9,11 @@ def testPd():
     print(df)
     df['date_month'] = df['date'].dt.strftime("%Y%m")
     df['day'] = df['date'].dt.day
+    df['month'] = df['date_month'].str[4:]
+    arr = ['01', '03', '09']
     print(df)
-    cl = df[df['day'] == 1 & df['date_month'].str.endswith('02')]
+    # cl = df[df['day'] == 1 & df['date_month'].str.endswith('02')]
+    cl = df[(df['day'] == 1) & (~df['month'].isin(arr))]
     print(cl)
 
 def test_date_range():
@@ -36,6 +39,6 @@ def get_oldest_staff(x):
         return df.iloc[-1]
 
 if __name__ == '__main__':
-    # testPd()
+    testPd()
     # test_date_range()
-    test_pd_group()
+    # test_pd_group()
