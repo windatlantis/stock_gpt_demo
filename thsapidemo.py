@@ -139,27 +139,43 @@ def reportDownload():
             f.write(r.content)
 
 def download():
-    start_date='20180101'
-    end_date='20230401'
+    start_date='20220101'
+    end_date='20230418'
+
     date_str_list=pd.bdate_range(start=start_date,end=end_date).strftime("%Y-%m-%d").tolist()
-    date_str_list=date_str_list[-20:]
-    list_len=len(date_str_list)
+    # date_str_list=date_str_list[-20:]
+    length = len(date_str_list)
+    print(length)
+
+    stock_hq_list = pd.DataFrame()
+
     f = open("./docs/stockcode.txt")             # 返回一个文件对象  
     line = f.readline()             # 调用文件的 readline()方法  
     while line:  
-        print(line, end = '') # 在 Python 3中使用  
-        for idx, date_str in enumerate(date_str_list):
-            #历史行情-股票-开盘价;收盘价;涨跌幅;成交量;成交额;总股本;总市值;A股流通股本;A股流通市值-iFinD数据接口
-            ths_data = THS_HQ(line,'open;close;changeRatio;volume;amount;totalShares;totalCapital;floatSharesOfAShares;floatCapitalOfAShares','', date_str, date_str)
-            print(ths_data)
+        line = line.strip('\n')
+        print(line) # 在 Python 3中使用  
+        # for i in range(length-1):
+        for date_str in date_str_list:
+            #时间;股票;开盘价;收盘价;涨跌幅;成交量;成交额;总股本;总市值;A股流通股本;A股流通市值-iFinD数据接口
+            hq_data = THS_HQ(line,'open;close;changeRatio;volume;amount;totalShares;totalCapital;floatSharesOfAShares;floatCapitalOfAShares','', date_str, date_str)
+            print(hq_data)
+            if hq_data.errorcode != 0:
+                print('error:{}'.format(hq_data.errmsg))
+            else:
+                stock_list = hq_data.data
+                stock_hq_list = pd.concat([stock_hq_list, stock_list], ignore_index=True)
+            
         line = f.readline()  
     f.close()
+
+    # stock_hq_list.columns=['时间','股票','开盘价','收盘价','涨跌幅','成交量','成交额','总股本','总市值','A股流通股本','A股流通市值']
+    stock_hq_list.to_csv('./stock_hq_list_{}.csv'.format(datetime.datetime.now().strftime('%Y%m%d%H%M%S')))
 
 def main():
     # 本脚本为数据接口通用场景的实例,可以通过取消注释下列示例函数来观察效果
     
     # 登录函数
-    thslogindemo()
+    # thslogindemo()
     download()
     # 通过数据池的板块成分函数和基础数据函数，提取沪深300的全部股票在2020-11-16日的日不复权收盘价
     # datepool_basicdata_demo()
