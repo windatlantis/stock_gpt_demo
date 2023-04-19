@@ -175,7 +175,7 @@ def main():
     # 本脚本为数据接口通用场景的实例,可以通过取消注释下列示例函数来观察效果
     
     # 登录函数
-    # thslogindemo()
+    thslogindemo()
     download()
     # 通过数据池的板块成分函数和基础数据函数，提取沪深300的全部股票在2020-11-16日的日不复权收盘价
     # datepool_basicdata_demo()
